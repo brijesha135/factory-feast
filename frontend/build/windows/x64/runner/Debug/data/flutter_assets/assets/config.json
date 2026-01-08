@@ -1,0 +1,28 @@
+{
+
+  "apiUrl": "http://192.168.1.40:8090/api/v1/",
+  "CLIENTCODE": "artisan_cafe",
+  "LOGO_PATH": "assets/images/artisian.png",
+  "POS_TITLE": "Factory Feast",
+  "FACTORY_DETAILS": {
+    "name": "Feast Central Kitchen",
+    "gstin": "27ACBPP7308P1Z3",
+    "addressLine1": "G-1, Industrial Estate, Lane 4",
+    "addressLine2": "Thane, Maharashtra-400607",
+    "phone": "+91 9892772337",
+    "fssaiCode": "21525014001192",
+    "bankAccountNo": "012345678900",
+    "bankName": "Bank of India",
+    "bankBranch": "Mumbai Main Branch",
+    "bankIfsc": "BOID0005555",
+    "jurisdiction": "Mumbai"
+  },
+  "CUSTOMER_DETAILS": {
+    "name": "Feast Cafe Outlet",
+    "addressLine1": "Shop No. 2, Ground Floor, Business Hub",
+    "stateCode": "Maharashtra 400602",
+    "fssaiCode": "11521015000037",
+    "gstin": "27AAGFL0466K1Z",
+    "contactNo": "7872909090"
+  }
+}

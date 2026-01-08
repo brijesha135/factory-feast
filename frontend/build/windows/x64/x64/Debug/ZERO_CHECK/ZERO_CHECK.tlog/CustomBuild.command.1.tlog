@@ -1,0 +1,10 @@
+^D:\CENTRAL_KITCHEN\BUILD\WINDOWS\X64\CMAKEFILES\8D1CD26D26E98C4DCFA1290859295D36\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/central_kitchen/windows -BD:/central_kitchen/build/windows/x64 --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/central_kitchen/build/windows/x64/central_kitchen.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

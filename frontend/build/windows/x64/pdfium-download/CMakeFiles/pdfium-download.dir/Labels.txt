@@ -1,0 +1,14 @@
+# Target labels
+ pdfium-download
+# Source files and their labels
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/pdfium-download
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/966b0d8564c83b131204bce5e8d5a365/pdfium-download.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/e825f595ed6d4054b5c457221b18ed32/pdfium-download-complete.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-build.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-configure.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-download.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-install.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-mkdir.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-patch.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-test.rule
+D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/a59ebfd3b4ca593d7781b266a54059d7/pdfium-download-update.rule
