@@ -1,23 +1,20 @@
-# --- Stage 1: Build the application ---
+# --- Stage 1: Build Stage ---
 FROM maven:3.8.4-openjdk-17 AS build
 WORKDIR /app
 
-# Copy the pom.xml and source code to the container
+# Copy files directly from the root of your repo
 COPY pom.xml .
 COPY src ./src
 
-# Build the application and skip tests to save time and memory
+# Build the JAR
 RUN mvn clean package -DskipTests
 
-# --- Stage 2: Create the runtime image ---
+# --- Stage 2: Run Stage ---
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
-# Copy only the built JAR from the first stage
+# Copy the JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port 8080 (standard for Spring Boot)
 EXPOSE 8080
-
-# Start the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
