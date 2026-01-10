@@ -1,3 +1,0 @@
-D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/pdfium-download.dir
-D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/ALL_BUILD.dir
-D:/central_kitchen/build/windows/x64/pdfium-download/CMakeFiles/ZERO_CHECK.dir
