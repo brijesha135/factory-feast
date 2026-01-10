@@ -1,15 +1,23 @@
-# Use a lightweight Java runtime
+# --- Stage 1: Build the application ---
+FROM maven:3.8.4-openjdk-17 AS build
+WORKDIR /app
+
+# Copy the pom.xml and source code to the container
+COPY pom.xml .
+COPY src ./src
+
+# Build the application and skip tests to save time and memory
+RUN mvn clean package -DskipTests
+
+# --- Stage 2: Create the runtime image ---
 FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
 
-# Add a volume for temporary files
-VOLUME /tmp
+# Copy only the built JAR from the first stage
+COPY --from=build /app/target/*.jar app.jar
 
-# Copy the built jar file from the target folder to the container
-# Note: Ensure you have run 'mvn clean package' locally first
-COPY target/*.jar app.jar
-
-# Run the jar file
-ENTRYPOINT ["java","-jar","/app.jar"]
-
-# Expose the port (Render uses 10000 by default but will map 8080)
+# Expose port 8080 (standard for Spring Boot)
 EXPOSE 8080
+
+# Start the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
