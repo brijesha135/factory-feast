@@ -1,15 +1,14 @@
-# --- Stage 1: Build Stage ---
+# Stage 1: Build Stage
 FROM maven:3.8.4-openjdk-17 AS build
 WORKDIR /app
 
-# Copy files directly from the root of your repo
-COPY pom.xml .
-COPY src ./src
+# Copy all files from the current folder into the container
+COPY . .
 
-# Build the JAR
+# Build the application
 RUN mvn clean package -DskipTests
 
-# --- Stage 2: Run Stage ---
+# Stage 2: Runtime Stage
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
