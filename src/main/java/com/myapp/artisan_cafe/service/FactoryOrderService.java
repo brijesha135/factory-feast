@@ -64,11 +64,17 @@ public class FactoryOrderService {
     @Transactional
     public FactoryOrderManifest updateOrder(Long id, FactoryOrderRequestDTO dto) {
         return repository.findById(id).map(order -> {
-            if(dto.getOrderType() != null) order.setFulfillmentType(dto.getOrderType());
+            // FIX: Update workflowStatus instead of fulfillmentType
+            if(dto.getWorkflowStatus() != null) {
+                order.setWorkflowStatus(dto.getWorkflowStatus());
+            }
+            // Keep order type update only if explicitly needed
+            if(dto.getOrderType() != null) {
+                order.setFulfillmentType(dto.getOrderType());
+            }
             return repository.save(order);
         }).orElse(null);
     }
-
     @Transactional
     public boolean deleteOrder(Long id) {
         if (repository.existsById(id)) {
