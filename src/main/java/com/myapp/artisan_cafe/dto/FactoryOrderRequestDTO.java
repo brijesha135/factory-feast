@@ -15,6 +15,9 @@ public class FactoryOrderRequestDTO {
     @JsonProperty("outletBrand")
     private String brandName;
 
+    @JsonProperty("workflowStatus")
+    private String WorkflowStatus;
+
     @JsonProperty("fulfillmentType")
     private String fulfillmentType;
 
