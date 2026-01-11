@@ -2,19 +2,21 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'dart:ui';
 import 'config.dart';
 
 
 class AppColors {
-  static const Color primaryNavy = Color(0xFF0F2027);
-  static const Color industrialGray = Color(0xFF203A43);
-  static const Color accentGold = Color(0xFFD4AF37);
-  static const Color successGreen = Color(0xFF27AE60);
-  static const Color errorRed = Color(0xFFE74C3C);
-  static const Color scaffoldBg = Color(0xFFF4F7F9);
+  static const Color primaryNavy = Color(0xFF071013); // Darker Navy
+  static const Color industrialGray = Color(0xFF141E22); // Near Black
+  static const Color accentGold = Color(0xFFB08D1A); // Deeper Gold
+  static const Color successGreen = Color(0xFF1E8449); // Darker Green
+  static const Color errorRed = Color(0xFFC0392B); // Darker Red
+  static const Color scaffoldBg = Color(0xFFE8ECEF); // Darker background
   static const Color textWhite = Colors.white;
-  static const Color textHighContrast = Colors.black87;
+  static const Color textMain = Color(0xFF000000); // Pure Black
+  static const Color textSecondary = Color(0xFF2C3E50); // Deep Blue-Gray
 }
 
 class TaxRule {
@@ -250,78 +252,205 @@ class _FactoryPOSScreenState extends State<FactoryPOSScreen> with SingleTickerPr
 
   Widget _buildBillingSidebar() {
     return Column(children: [
-      Container(width: double.infinity, padding: const EdgeInsets.all(15), color: AppColors.industrialGray, child: const Text("ORDER AUDIT SUMMARY", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+      // Header remains dark but text is boosted
+      Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          color: AppColors.industrialGray,
+          child: const Text(
+              "ORDER AUDIT SUMMARY",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)
+          )
+      ),
       Expanded(child: ListView.builder(
         itemCount: cart.length,
         itemBuilder: (c, i) {
           final item = cart[i];
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey[200]!)),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                // Darkened border from grey[200] to a much more visible black12/black26
+                border: Border.all(color: Colors.black26, width: 1.5)
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ListTile(
-                  title: Text(item.product.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
-                  trailing: Text("₹${item.product.price}", style: const TextStyle(fontWeight: FontWeight.w900)),
-                  leading: IconButton(icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20), onPressed: () => setState(() => cart.removeAt(i))),
+                  dense: true,
+                  title: Text(
+                      item.product.name.toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.textMain)
+                  ),
+                  trailing: Text(
+                      "₹${item.product.price}",
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textMain)
+                  ),
+                  leading: IconButton(
+                      icon: const Icon(Icons.remove_circle, color: AppColors.errorRed, size: 24),
+                      onPressed: () => setState(() => cart.removeAt(i))
+                  ),
                 ),
-                if (item.variant != null) Padding(padding: const EdgeInsets.only(left: 70), child: Text("+ ${item.variant!.name} (₹${item.variant!.price})", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey))),
-                ...item.modifiers.map((m) => Padding(padding: const EdgeInsets.only(left: 70), child: Text("+ ${m.name} (₹${m.price})", style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.blueGrey)))),
-                const Divider(),
-                Padding(padding: const EdgeInsets.all(10), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("TAX & SURCHARGE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)), Text("₹${item.totalTax.toStringAsFixed(2)}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold))])),
+                // Variants: Moved from blueGrey to textSecondary (Much Darker)
+                if (item.variant != null)
+                  Padding(
+                      padding: const EdgeInsets.only(left: 70, bottom: 4),
+                      child: Text(
+                          "+ ${item.variant!.name} (₹${item.variant!.price})",
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.textSecondary)
+                      )
+                  ),
+                // Modifiers: Darker and bold
+                ...item.modifiers.map((m) => Padding(
+                    padding: const EdgeInsets.only(left: 70, bottom: 2),
+                    child: Text(
+                        "+ ${m.name} (₹${m.price})",
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, color: AppColors.textSecondary)
+                    )
+                )),
+                const Divider(thickness: 1, color: Colors.black12),
+                Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("TAX & SURCHARGE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.textMain)),
+                          Text("₹${item.totalTax.toStringAsFixed(2)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textMain))
+                        ]
+                    )
+                ),
               ],
             ),
           );
         },
       )),
-      Container(padding: const EdgeInsets.all(20), color: Colors.white, child: Column(children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("GRAND TOTAL", style: TextStyle(fontWeight: FontWeight.w900)), Text("₹${cart.fold(0.0, (s, i) => s + i.totalWithTax).toStringAsFixed(2)}", style: const TextStyle(color: AppColors.errorRed, fontWeight: FontWeight.w900, fontSize: 24))]), const SizedBox(height: 15), SizedBox(width: double.infinity, height: 55, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy), onPressed: () => _pushOrder("SALE"), child: const Text("CONFIRM & SAVE TRANSACTION", style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 10))))])),
+      // Bottom Summary Section
+      Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: AppColors.primaryNavy, width: 3)) // Stronger visual separation
+          ),
+          child: Column(children: [
+            Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("GRAND TOTAL", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.textMain)),
+                  Text(
+                      "₹${cart.fold(0.0, (s, i) => s + i.totalWithTax).toStringAsFixed(2)}",
+                      style: const TextStyle(color: AppColors.errorRed, fontWeight: FontWeight.w900, fontSize: 28) // Increased size
+                  )
+                ]
+            ),
+            const SizedBox(height: 15),
+            SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryNavy,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                    ),
+                    onPressed: () => _pushOrder("SALE"),
+                    child: const Text(
+                        "CONFIRM & SAVE TRANSACTION",
+                        style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.1)
+                    )
+                )
+            )
+          ])
+      ),
     ]);
   }
 
   Widget _buildQ(String type) {
+    // Logic to get current date formatted for the mock data
+    final String todayStr = DateFormat('MMM dd').format(DateTime.now()); // Jan 11
+
     final mockData = type == "URGENT" ? [
-      {"id": "URG-401", "loc": "South Point Mall", "items": "15x Croissant", "amt": 2700.0, "time": "14:00"},
-      {"id": "URG-402", "loc": "Railway Hub", "items": "20x Baguette", "amt": 3000.0, "time": "14:15"},
-      {"id": "URG-403", "loc": "Airport Wing A", "items": "5x Choco Cake", "amt": 6000.0, "time": "14:30"},
-      {"id": "URG-404", "loc": "Main City Cafe", "items": "10x Sourdough", "amt": 1800.0, "time": "14:45"},
-      {"id": "URG-405", "loc": "Corporate Park", "items": "12x Pastry", "amt": 1440.0, "time": "15:00"},
+      {"id": "URG-401", "loc": "South Point Mall", "items": "15x Croissant", "amt": 2700.0, "time": "18:45"},
+      {"id": "URG-402", "loc": "Railway Hub", "items": "20x Baguette", "amt": 3000.0, "time": "19:00"},
+      {"id": "URG-403", "loc": "Airport Wing A", "items": "5x Choco Cake", "amt": 6000.0, "time": "19:15"},
+      {"id": "URG-404", "loc": "Main City Cafe", "items": "10x Sourdough", "amt": 1800.0, "time": "19:30"},
+      {"id": "URG-405", "loc": "Corporate Park", "items": "12x Pastry", "amt": 1440.0, "time": "19:45"},
     ] : [
-      {"id": "ADV-701", "loc": "North Side Shop", "items": "25x Baguette", "amt": 3750.0, "time": "Jan 04"},
-      {"id": "ADV-702", "loc": "East Coast Hub", "items": "10x Sourdough", "amt": 1800.0, "time": "Jan 04"},
-      {"id": "ADV-703", "loc": "Green Valley", "items": "5x Wedding Cake", "amt": 15000.0, "time": "Jan 05"},
-      {"id": "ADV-704", "loc": "High Street Cafe", "items": "50x Cookies", "amt": 4750.0, "time": "Jan 05"},
-      {"id": "ADV-705", "loc": "River Side Hub", "items": "30x Croissant", "amt": 3600.0, "time": "Jan 06"},
+      {"id": "ADV-701", "loc": "North Side Shop", "items": "25x Baguette", "amt": 3750.0, "time": todayStr},
+      {"id": "ADV-702", "loc": "East Coast Hub", "items": "10x Sourdough", "amt": 1800.0, "time": todayStr},
+      {"id": "ADV-703", "loc": "Green Valley", "items": "5x Wedding Cake", "amt": 15000.0, "time": "Jan 12"},
+      {"id": "ADV-704", "loc": "High Street Cafe", "items": "50x Cookies", "amt": 4750.0, "time": "Jan 12"},
+      {"id": "ADV-705", "loc": "River Side Hub", "items": "30x Croissant", "amt": 3600.0, "time": "Jan 13"},
     ];
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: mockData.length,
       itemBuilder: (c, i) => Card(
+        // Background made deep black-navy
         color: AppColors.primaryNavy,
-        shape: RoundedRectangleBorder(side: BorderSide(color: Colors.white.withOpacity(0.1))),
-        child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(mockData[i]['id'] as String, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white)),
-            Text(mockData[i]['loc'] as String, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70)),
-            Text(mockData[i]['items'] as String, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w900)),
-          ])),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text("DUE: ${mockData[i]['time']}", style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.errorRed)),
-            Text("₹${(mockData[i]['amt'] as double).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white)),
-            const SizedBox(height: 8),
-            SizedBox(height: 35, child: ElevatedButton(
-              onPressed: () => _pushOrder(type, mock: [{"productSku": "MOCK", "itemDescription": mockData[i]['items'] as String, "receiveQty": 1, "unitBasePrice": mockData[i]['amt'] as double, "grossLineTotal": mockData[i]['amt'] as double}]),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryNavy,
-                side: const BorderSide(color: AppColors.accentGold),
-              ),
-              child: const Text("PUSH TO KITCHEN", style: TextStyle(fontSize: 8, color: AppColors.accentGold, fontWeight: FontWeight.w900)),
-            ))
-          ])
-        ])),
+        elevation: 4,
+        // Border darkened and thickened to Accent Gold for high contrast
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.accentGold, width: 2.0)
+        ),
+        child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Order ID in Gold
+                Text(
+                    mockData[i]['id'] as String,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.accentGold, letterSpacing: 1.2)
+                ),
+                const SizedBox(height: 4),
+                // Location in Bold White
+                Text(
+                    mockData[i]['loc'] as String,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white)
+                ),
+                // Items in Bold White
+                Text(
+                    mockData[i]['items'] as String,
+                    style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w900)
+                ),
+              ])),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                // Due time in bright red for urgency
+                Text(
+                    "DUE: ${mockData[i]['time']}",
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.redAccent)
+                ),
+                // Price in large bold white
+                Text(
+                    "₹${(mockData[i]['amt'] as double).toStringAsFixed(2)}",
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)
+                ),
+                const SizedBox(height: 10),
+                // Action button made larger and more contrasty
+                SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () => _pushOrder(type, mock: [{
+                        "productSku": "MOCK",
+                        "itemDescription": mockData[i]['items'] as String,
+                        "receiveQty": 1,
+                        "unitBasePrice": mockData[i]['amt'] as double,
+                        "grossLineTotal": mockData[i]['amt'] as double
+                      }]),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentGold,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text(
+                          "PUSH TO KITCHEN",
+                          style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w900)
+                      ),
+                    )
+                )
+              ])
+            ])),
       ),
-    );
 
+    );
   }
 }

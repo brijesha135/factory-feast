@@ -17,15 +17,17 @@ import 'order_service.dart';
 import 'kot_print_service.dart';
 
 class AppColors {
-  static const Color primaryNavy = Color(0xFF0F2027);
-  static const Color industrialBlue = Color(0xFF23395D);
-  static const Color accentGold = Color(0xFFD4AF37);
-  static const Color scaffoldBg = Color(0xFFF4F7F9);
+  static const Color primaryNavy = Color(0xFF071013); // Darker Navy
+  static const Color industrialBlue = Color(0xFF121D2F); // Darker Blue
+  static const Color accentGold = Color(0xFFB08D1A); // Deeper Gold for contrast
+  static const Color scaffoldBg = Color(0xFFE8ECEF); // Darker background
   static const Color cardBg = Colors.white;
-  static const Color statusPending = Color(0xFFE74C3C);
-  static const Color statusProcessing = Color(0xFFF39C12);
-  static const Color statusShipped = Color(0xFF3498DB);
-  static const Color statusDone = Color(0xFF27AE60);
+  static const Color statusPending = Color(0xFFC0392B); // Darker Red
+  static const Color statusProcessing = Color(0xFFD35400); // Darker Orange
+  static const Color statusShipped = Color(0xFF2980B9); // Darker Blue
+  static const Color statusDone = Color(0xFF1E8449); // Darker Green
+  static const Color textMain = Color(0xFF000000); // Absolute Black
+  static const Color textSecondary = Color(0xFF2C3E50); // Dark Grey/Blue
 }
 
 enum DateFilterType { all, today, yesterday, custom }
@@ -287,49 +289,125 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
   }
   Widget _buildFilterBar() {
     return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))]),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          // Darkened the shadow for a stronger "lifted" effect
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4)
+            )
+          ]
+      ),
       child: Row(children: [
         Expanded(flex: 4, child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(color: AppColors.scaffoldBg, borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          // Darkened the inner container background to make the white main container pop
+          decoration: BoxDecoration(
+              color: const Color(0xFFD1D9E0),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primaryNavy, width: 1.5) // Added a solid border
+          ),
           child: TextField(
             controller: _searchController,
+            // Set input text to absolute black
+            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 14),
             onChanged: (v) => setState(() => _searchQuery = v),
-            decoration: InputDecoration(icon: Icon(Icons.search, color: AppColors.industrialBlue), hintText: "Search Manifests...", border: InputBorder.none),
+            decoration: InputDecoration(
+              // Icon color deepened
+                icon: const Icon(Icons.search, color: AppColors.primaryNavy, size: 24),
+                hintText: "Search Manifests...",
+                // Hint text made much darker (textSecondary) and bolder
+                hintStyle: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14
+                ),
+                border: InputBorder.none
+            ),
           ),
         )),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
+        // These call the updated date chip logic with darker borders/text
         _buildDateChip("FROM", _customStartDate, _selectStartDate),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         _buildDateChip("TO", _customEndDate, _selectEndDate),
       ]),
     );
   }
 
   Widget _buildDateChip(String l, DateTime? d, VoidCallback t) {
-    return Expanded(child: InkWell(onTap: t, child: Container(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(8)),
-      child: Column(children: [
-        Text(l, style: TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.w900)),
-        Text(d == null ? "SELECT" : DateFormat('dd/MM').format(d), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-      ]),
-    )));
+    return Expanded(
+      child: InkWell(
+        onTap: t,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10), // Increased padding for better tap target
+          decoration: BoxDecoration(
+            // Border changed from light grey to a much darker industrial blue/black
+            border: Border.all(color: AppColors.primaryNavy, width: 1.5),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.white,
+          ),
+          child: Column(
+            children: [
+              Text(
+                  l,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    // Changed from light grey to the dark secondary text color
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w900, // Maximum thickness
+                  )
+              ),
+              const SizedBox(height: 2), // Small gap between label and date
+              Text(
+                  d == null ? "SELECT" : DateFormat('dd/MM').format(d),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    // Changed to absolute black for high contrast
+                    color: AppColors.textMain,
+                    fontWeight: FontWeight.w900,
+                  )
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
   Widget _buildTabBar() {
-    return Container(color: Colors.white, child: TabBar(
-      controller: _tabController,
-      indicatorColor: AppColors.accentGold,
-      indicatorWeight: 4,
-      labelColor: AppColors.primaryNavy,
-      unselectedLabelColor: Colors.grey,
-      labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-      tabs: [Tab(text: "PENDING"), Tab(text: "PROCESS"), Tab(text: "READY"), Tab(text: "DONE")],
-    ));
+    return Container(
+      // Added a subtle bottom border to the container to define the tab area against the body
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey[300]!, width: 1)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicatorColor: AppColors.accentGold,
+        indicatorWeight: 6, // Thickened from 4 to 6 for a stronger visual cue
+        labelColor: AppColors.textMain, // Changed to Absolute Black
+        unselectedLabelColor: Color(0xFF555555), // Changed from light grey to a much darker charcoal
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w900, // Maximum boldness for readability
+          fontSize: 13, // Slightly increased for clarity
+          letterSpacing: 1.2, // Improved spacing for better scannability
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700, // Even unselected tabs stay clearly visible
+          fontSize: 12,
+        ),
+        tabs: const [
+          Tab(text: "PENDING"),
+          Tab(text: "PROCESS"),
+          Tab(text: "READY"),
+          Tab(text: "DONE")
+        ],
+      ),
+    );
   }
-
   Widget _buildOrderListView(int tabIndex) {
     final orders = _getOrdersForTab(tabIndex);
     if (orders.isEmpty) return Center(child: Opacity(opacity: 0.2, child: Icon(Icons.inventory_2_outlined, size: 80)));
