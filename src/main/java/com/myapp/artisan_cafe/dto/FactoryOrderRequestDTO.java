@@ -15,13 +15,14 @@ public class FactoryOrderRequestDTO {
     @JsonProperty("outletBrand")
     private String brandName;
 
+    // FIX 1: Use lowercase 'w' so Lombok generates getWorkflowStatus()
     @JsonProperty("workflowStatus")
-    private String WorkflowStatus;
+    private String workflowStatus;
 
     @JsonProperty("fulfillmentType")
     private String fulfillmentType;
 
-    @JsonProperty("workflowStatus")
+    // FIX 2: Removed the duplicate "workflowStatus" mapping here to avoid conflicts
     private String orderType;
 
     @JsonProperty("items")
