@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:printing/printing.dart'; // Add this import
 
 import 'main.dart';
 import 'config.dart';
@@ -129,58 +130,105 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
       pdf.addPage(pw.MultiPage(build: (context) => [
         pw.Row(children: [pw.Image(logo, width: 100), pw.Spacer(), pw.Text("CHALLAN", style: pw.TextStyle(fontSize: 20))]),
         pw.Divider(),
-        pw.Text("Manifest No: ${order['manifestNo']}"),
-        pw.Text("Brand: ${order['outletBrand']}"),
-        pw.Table.fromTextArray(headers: ['Item', 'Qty'], data: (order['items'] as List).map((i) => [i['itemDescription'], _getItemSendQuantity(i)]).toList()),
+        pw.Text("Manifest No: ${order['manifestNo'] ?? 'N/A'}"),
+        pw.Text("Brand: ${order['outletBrand'] ?? 'Factory Feast'}"),
+        pw.SizedBox(height: 10),
+        pw.Table.fromTextArray(
+            headers: ['Item Description', 'Quantity'],
+            data: (order['items'] as List).map((i) => [i['itemDescription'], _getItemSendQuantity(i)]).toList()
+        ),
       ]));
-      final output = await getTemporaryDirectory();
-      final file = File("${output.path}/Challan_${order['manifestNo']}.pdf");
-      await file.writeAsBytes(await pdf.save());
-      await OpenFile.open(file.path);
-    } catch (e) { debugPrint(e.toString()); }
+
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'Challan_${order['manifestNo']}.pdf',
+      );
+    } catch (e) {
+      debugPrint("Download Error: $e");
+    }
   }
 
   Future<void> printInvoice(Map<String, dynamic> order) async {
     try {
       final pdf = pw.Document();
       final logo = await imageFromAsset(Config.logoPath);
+
       double grandTotal = 0;
       for (var item in (order['items'] as List)) {
         grandTotal += (item['grossLineTotal'] ?? 0).toDouble();
       }
+
       pdf.addPage(pw.MultiPage(build: (context) => [
-        pw.Row(children: [pw.Image(logo, width: 100), pw.Spacer(), pw.Text("TAX INVOICE")]),
+        pw.Row(children: [
+          pw.Image(logo, width: 100),
+          pw.Spacer(),
+          pw.Text("TAX INVOICE", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold))
+        ]),
         pw.Divider(),
-        pw.Table.fromTextArray(headers: ['Description', 'Qty', 'Line Total'],
-            data: (order['items'] as List).map((i) => [i['itemDescription'], _getItemSendQuantity(i), i['grossLineTotal'].toStringAsFixed(2)]).toList()),
+        pw.Text("Manifest No: ${order['manifestNo'] ?? 'N/A'}"),
+        pw.Text("Brand: ${order['outletBrand'] ?? 'Factory Feast'}"),
+        pw.SizedBox(height: 10),
+        pw.Table.fromTextArray(
+            headers: ['Description', 'Qty', 'Line Total'],
+            data: (order['items'] as List).map((i) => [
+              i['itemDescription'],
+              _getItemSendQuantity(i),
+              "Rs. ${i['grossLineTotal'].toStringAsFixed(2)}" // FIXED: Using Rs. instead of ₹
+            ]).toList()
+        ),
         pw.Divider(),
-        pw.Align(alignment: pw.Alignment.centerRight, child: pw.Text("Grand Total: ${grandTotal.toStringAsFixed(2)}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+        pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Text("Grand Total: Rs. ${grandTotal.toStringAsFixed(2)}", // FIXED: Using Rs.
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+        ),
         pw.SizedBox(height: 10),
         pw.Text("In Words: ${_convertNumberToWords(grandTotal)}"),
       ]));
-      final output = await getTemporaryDirectory();
-      final file = File("${output.path}/Inv_${order['manifestNo']}.pdf");
-      await file.writeAsBytes(await pdf.save());
-      await OpenFile.open(file.path);
-    } catch (e) { debugPrint(e.toString()); }
+
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'Invoice_${order['manifestNo']}.pdf',
+      );
+    } catch (e) {
+      debugPrint("Download Error: $e");
+    }
   }
 
   Future<void> updateOrderStatus(Map<String, dynamic> order, String newStatus) async {
-    showDialog(context: context, barrierDismissible: false, builder: (c) => Center(child: CircularProgressIndicator(color: AppColors.accentGold)));
+    // 1. Show loader
+    showDialog(context: context, barrierDismissible: false,
+        builder: (c) => Center(child: CircularProgressIndicator(color: AppColors.accentGold)));
+
     try {
       final id = order['manifestId'];
       final url = Uri.parse('${Config.apiUrl}factory/orders/update/$id?DB=${Config.clientCode}');
-      order['workflowStatus'] = newStatus;
-      final res = await http.put(url, headers: {"Content-Type": "application/json"}, body: jsonEncode(order));
-      Navigator.pop(context);
-      if (res.statusCode == 200) {
-        _orderService.fetchOrders();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Manifest moved to $newStatus"), backgroundColor: AppColors.statusDone));
-      }
-    } catch (e) { Navigator.pop(context); }
-  }
 
-  @override
+      // 2. Create a clean copy and update ONLY the status
+      Map<String, dynamic> updateData = Map.from(order);
+      updateData['workflowStatus'] = newStatus;
+
+      final res = await http.put(
+          url,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(updateData) // Send the whole object with the new status
+      );
+
+      Navigator.pop(context); // Remove loader
+
+      if (res.statusCode == 200) {
+        _orderService.fetchOrders(); // Refresh local list
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Moved to $newStatus"), backgroundColor: AppColors.statusDone)
+        );
+      } else {
+        debugPrint("Update Failed: ${res.body}");
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      debugPrint("Network Error: $e");
+    }
+  }  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -291,10 +339,37 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
       itemBuilder: (context, index) => _buildOrderCard(orders[index], tabIndex),
     );
   }
+  String _getDisplayDate(Map<String, dynamic> order) {
+    // Check for manifestDate, then fallback to sysCreatedAt or sys_created_at
+    dynamic raw = order['manifestDate'] ?? order['sysCreatedAt'] ?? order['sys_created_at'];
+    if (raw == null) return "N/A";
+    try {
+      // .toLocal() converts the UTC time from Aiven to India Standard Time
+      DateTime dt = DateTime.parse(raw.toString()).toLocal();
+      return DateFormat('dd MMM').format(dt);
+    } catch (e) {
+      return "N/A";
+    }
+  }
+  String _getDisplayTime(Map<String, dynamic> order) {
+    dynamic raw = order['manifestTime'] ?? order['sysCreatedAt'] ?? order['sys_created_at'];
+    if (raw == null) return "--:--";
+    try {
+      String timeStr = raw.toString();
+      if (timeStr.contains('-') || timeStr.contains(':')) {
+        DateTime dt = DateTime.parse(timeStr).toLocal();
+        return DateFormat('hh:mm a').format(dt);
+      }
+      return timeStr;
+    } catch (e) {
+      return "--:--";
+    }
+  }
 
   Widget _buildOrderCard(Map<String, dynamic> order, int tabIndex) {
     String status = (order['workflowStatus'] ?? 'PLACED').toString().toUpperCase();
     Color sCol = _getStatusColor(status);
+
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))]),
@@ -306,7 +381,7 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
           child: Column(children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text("MANIFEST #${order['manifestNo']}", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primaryNavy)),
+                Text("MANIFEST #${order['manifestNo'] ?? '---'}", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primaryNavy)),
                 Text(order['outletBrand'] ?? 'Feast Outlet', style: TextStyle(color: Colors.grey, fontSize: 12)),
               ]),
               Container(
@@ -317,8 +392,8 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
             ]),
             Divider(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              _rowIcon(Icons.calendar_today, DateFormat('dd MMM').format(DateTime.parse(order['manifestDate'] ?? '2026-01-01'))),
-              _rowIcon(Icons.access_time, order['manifestTime'] ?? '--:--'),
+              _rowIcon(Icons.calendar_today, _getDisplayDate(order)),
+              _rowIcon(Icons.access_time, _getDisplayTime(order)),
               _rowIcon(Icons.layers, order['fulfillmentType'] ?? 'STD'),
               Icon(Icons.chevron_right, color: Colors.grey[300]),
             ]),
@@ -326,20 +401,34 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
         ),
       ),
     );
-  }
-
-  Widget _rowIcon(IconData i, String t) {
+  }  Widget _rowIcon(IconData i, String t) {
     return Row(children: [Icon(i, size: 12, color: AppColors.accentGold), SizedBox(width: 4), Text(t, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))]);
   }
-
+  Future<pw.TextStyle> _getUnicodeStyle() async {
+    // Use a font that exists in your assets, or load a system font
+    final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final font = pw.Font.ttf(fontData);
+    return pw.TextStyle(font: font, fontFallback: [font]);
+  }
   List<dynamic> _getOrdersForTab(int tabIndex) {
     final all = [..._orderService.pendingOrders.value, ..._orderService.completedOrders.value];
     List<dynamic> target;
+
     switch (tabIndex) {
-      case 0: target = all.where((o) => (o['workflowStatus'] ?? 'PLACED').toUpperCase() == 'PLACED').toList(); break;
-      case 1: target = all.where((o) => (o['workflowStatus'] ?? '').toUpperCase() == 'PROCESSING').toList(); break;
-      case 2: target = all.where((o) => (o['workflowStatus'] ?? '').toUpperCase() == 'READY').toList(); break;
-      case 3: target = all.where((o) => (o['workflowStatus'] ?? '').toUpperCase() == 'COMPLETED').toList(); break;
+      case 0: // PENDING
+        target = all.where((o) =>
+        (o['workflowStatus'] == null || o['workflowStatus'].toString().toUpperCase() == 'PLACED')
+        ).toList();
+        break;
+      case 1: // PROCESS
+        target = all.where((o) => o['workflowStatus'].toString().toUpperCase() == 'PROCESSING').toList();
+        break;
+      case 2: // READY
+        target = all.where((o) => o['workflowStatus'].toString().toUpperCase() == 'READY').toList();
+        break;
+      case 3: // DONE
+        target = all.where((o) => o['workflowStatus'].toString().toUpperCase() == 'COMPLETED').toList();
+        break;
       default: target = [];
     }
     return _filterOrders(target);
@@ -349,18 +438,23 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> with SingleTickerProv
     var filtered = orders.where((o) {
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
-      return o['manifestNo'].toString().toLowerCase().contains(q) || o['outletBrand'].toString().toLowerCase().contains(q);
+      // Use null-aware checks
+      return (o['manifestNo']?.toString().toLowerCase().contains(q) ?? false) ||
+          (o['outletBrand']?.toString().toLowerCase().contains(q) ?? false);
     }).toList();
+
     if (_customStartDate != null && _customEndDate != null) {
       filtered = filtered.where((o) {
-        final d = DateTime.parse(o['manifestDate']);
+        // Use fallback for filtering too
+        String? rawDate = o['manifestDate'] ?? o['sysCreatedAt'];
+        if (rawDate == null) return false;
+        final d = DateTime.parse(rawDate);
         return !d.isBefore(_customStartDate!) && !d.isAfter(_customEndDate!.add(Duration(days: 1)));
       }).toList();
     }
     filtered.sort((a, b) => (b['manifestId'] ?? 0).compareTo(a['manifestId'] ?? 0));
     return filtered;
   }
-
   void _showOrderDetails(Map<String, dynamic> order, int tabIndex) {
     Map<String, dynamic> localOrder = json.decode(json.encode(order));
     bool edited = false;
